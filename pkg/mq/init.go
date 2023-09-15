@@ -6,8 +6,12 @@ import (
 )
 
 type Config struct {
-	Host  string // temp
-	Port  int    // temp
+	// For RabbitMQ
+	Host     string
+	Port     int
+	Username string
+	Password string
+	// For RabbitMQ
 	Hosts []string
 	Group string
 }
@@ -16,6 +20,8 @@ type ConsumerConfig struct {
 }
 
 type Producer interface {
+	// SendMessage sends a message to the specified topic to direct queue (only on Rabbit MQ).
+	SendDirectMessage(topic, msg string) error
 	// SendMessage sends a message to the specified topic.
 	SendMessage(topic, msg string) error
 	// Close closes the MQ producer.
@@ -40,6 +46,10 @@ type Message interface {
 	Body() []byte
 	// Time returns the time when the message was received.
 	Time() time.Time
+	// Requeue send message back to queue.
+	Requeue() error
+	// Done send message to queue that a message is done
+	Done() error
 }
 
 type HandlerFunc func(ctx context.Context, msg Message) error

@@ -1,10 +1,12 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 )
 
-func (h Handler) KafkaPublish(w http.ResponseWriter, r *http.Request) {
+func (h Handler) Publish(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	w.Header().Set("Content-Type", "application/json")
 
@@ -16,9 +18,15 @@ func (h Handler) KafkaPublish(w http.ResponseWriter, r *http.Request) {
 	// Get values from the form data
 	topic := r.FormValue("topic")
 	message := r.FormValue("message")
+	direct, _ := strconv.ParseBool(r.FormValue("direct"))
 
-	err = h.producer.SendMessage(topic, message)
+	if direct {
+		err = h.producer.SendDirectMessage(topic, message)
+	} else {
+		err = h.producer.SendMessage(topic, message)
+	}
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

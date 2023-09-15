@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -26,7 +25,7 @@ func NewConsumer(config mq.Config) (*KafkaConsumer, error) {
 	})
 
 	if err != nil {
-		log.Printf("Error creating Kafka consumer: %v", err)
+		return nil, err
 	}
 
 	kafkaConsumer := KafkaConsumer{
@@ -37,31 +36,31 @@ func NewConsumer(config mq.Config) (*KafkaConsumer, error) {
 	return &kafkaConsumer, nil
 }
 
-func (k *KafkaConsumer) AddConsumer(topic string, cfg mq.ConsumerConfig, handler mq.HandlerFunc) error {
-	k.topics = append(k.topics, topic)
-	k.handlers[topic] = handler
+func (c *KafkaConsumer) AddConsumer(topic string, cfg mq.ConsumerConfig, handler mq.HandlerFunc) error {
+	c.topics = append(c.topics, topic)
+	c.handlers[topic] = handler
 
 	return nil
 }
 
-func (k *KafkaConsumer) AddConsumerWithChannel(topic, channel string, cfg mq.ConsumerConfig, handler mq.HandlerFunc) error {
+func (c *KafkaConsumer) AddConsumerWithChannel(topic, channel string, cfg mq.ConsumerConfig, handler mq.HandlerFunc) error {
 	return errors.New("not implemented in kafka")
 }
 
-func (k *KafkaConsumer) Start() error {
-	if len(k.topics) == 0 {
+func (c *KafkaConsumer) Start() error {
+	if len(c.topics) == 0 {
 		return errors.New("No topic is added")
 	}
 
-	k.SubscribeTopics(k.topics, nil)
+	c.SubscribeTopics(c.topics, nil)
 
 	// A signal handler or similar could be used to set this to false to break the loop.
 	run := true
 
 	for run {
-		msg, err := k.ReadMessage(time.Second)
+		msg, err := c.ReadMessage(time.Second)
 		if err == nil {
-			handler := k.handlers[*msg.TopicPartition.Topic]
+			handler := c.handlers[*msg.TopicPartition.Topic]
 			ctx := context.Background()
 			message := KafkaMessage{Message: msg}
 			handler(ctx, message)

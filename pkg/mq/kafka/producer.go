@@ -1,7 +1,6 @@
 package kafka
 
 import (
-	"log"
 	"strings"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -17,15 +16,19 @@ func NewProducer(config mq.Config) (*KafkaProducer, error) {
 		"bootstrap.servers": strings.Join(config.Hosts, ","),
 	})
 	if err != nil {
-		log.Printf("Error creating Kafka producer: %v", err)
+		return nil, err
 	}
 
 	kafkaProducer := KafkaProducer{Producer: producer}
 	return &kafkaProducer, nil
 }
 
-func (k KafkaProducer) SendMessage(topic, msg string) error {
-	err := k.Produce(&kafka.Message{
+func (p KafkaProducer) SendDirectMessage(topic, msg string) error {
+	return p.SendMessage(topic, msg)
+}
+
+func (p KafkaProducer) SendMessage(topic, msg string) error {
+	err := p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          []byte(msg),
 	}, nil)
@@ -33,6 +36,6 @@ func (k KafkaProducer) SendMessage(topic, msg string) error {
 	return err
 }
 
-func (k KafkaProducer) Close() {
-	k.Close()
+func (p KafkaProducer) Close() {
+	p.Close()
 }

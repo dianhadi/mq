@@ -13,27 +13,49 @@ import (
 	handler "github.com/dianhadi/mq/internal/handler/http"
 	"github.com/dianhadi/mq/pkg/mq"
 	mqKafka "github.com/dianhadi/mq/pkg/mq/kafka"
+	mqRabbit "github.com/dianhadi/mq/pkg/mq/rabbitmq"
 	"github.com/go-chi/chi"
 )
 
 func main() {
 	broker := "localhost:9092"
+
+	host := "localhost"
+	port := 5672
+	username := "admin"
+	password := "admin"
 	serverPort := "8008"
 
 	// Init Configuration
-	config := mq.Config{
+	configKafka := mq.Config{
 		Hosts: []string{broker},
+	}
+	configRabbit := mq.Config{
+		Host:     host,
+		Port:     port,
+		Username: username,
+		Password: password,
 	}
 
 	// Init Producer
-	producer, err := mqKafka.NewProducer(config)
+	producerKafka, err := mqKafka.NewProducer(configKafka)
 	if err != nil {
 		panic(err)
 	}
-	defer producer.Close()
+	defer producerKafka.Close()
+
+	producerRabbitMq, err := mqRabbit.NewProducer(configRabbit)
+	if err != nil {
+		panic(err)
+	}
+	defer producerRabbitMq.Close()
 
 	log.Println("Init Handler")
-	handlerKafka, err := handler.New(producer)
+	handlerKafka, err := handler.New(producerKafka)
+	if err != nil {
+		panic(err)
+	}
+	handlerRabbitMq, err := handler.New(producerRabbitMq)
 	if err != nil {
 		panic(err)
 	}
@@ -41,7 +63,8 @@ func main() {
 	r := chi.NewRouter()
 
 	log.Println("Register Route")
-	r.Post("/kafka", handlerKafka.KafkaPublish)
+	r.Post("/kafka", handlerKafka.Publish)
+	r.Post("/rabbit", handlerRabbitMq.Publish)
 
 	log.Printf("Starting server on port %s...", serverPort)
 	startServer(":"+serverPort, r)
