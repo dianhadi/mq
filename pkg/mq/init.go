@@ -5,18 +5,48 @@ import (
 	"time"
 )
 
+type (
+	ConfigRabbitMq struct {
+		Host     string
+		Port     int
+		Username string
+		Password string
+	}
+	ConfigKafka struct {
+		Hosts []string
+		Group string
+	}
+	ConfigNsq struct {
+		ProducerHost string
+		ProducerPort int
+		ConsumerHost string
+		ConsumerPort int
+	}
+)
+
 type Config struct {
-	// For RabbitMQ
-	Host     string
-	Port     int
-	Username string
-	Password string
-	// For RabbitMQ
-	Hosts []string
-	Group string
+	RabbitMq ConfigRabbitMq
+	Kafka    ConfigKafka
+	Nsq      ConfigNsq
 }
 
+type (
+	ConsumerConfigRabbitMq struct {
+		AutoAck   bool
+		Exclusive bool
+		NoLocal   bool
+		NoWait    bool
+	}
+	ConsumerConfigNsq struct {
+		Concurrency int
+		MaxInFlight int
+		MaxAttempts uint16
+	}
+)
+
 type ConsumerConfig struct {
+	RabbitMq ConsumerConfigRabbitMq
+	Nsq      ConsumerConfigNsq
 }
 
 type Producer interface {
@@ -29,12 +59,12 @@ type Producer interface {
 }
 
 type Consumer interface {
-	// AddConsumer adds a consumer for the specified topic.
+	// AddHandler adds a consumer for the specified topic.
 	// It takes a ConsumerConfig for configuring the consumer and a HandlerFunc for processing messages.
-	AddConsumer(topic string, cfg ConsumerConfig, handler HandlerFunc) error
-	// AddConsumerWithChannel adds a consumer for the specified topic and channel.
+	AddHandler(topic string, cfg ConsumerConfig, handler HandlerFunc) error
+	// AddHandlerWithChannel adds a consumer for the specified topic and channel.
 	// It takes a ConsumerConfig for configuring the consumer and a HandlerFunc for processing messages.
-	AddConsumerWithChannel(topic, channel string, cfg ConsumerConfig, handler HandlerFunc) error
+	AddHandlerWithChannel(topic, channel string, cfg ConsumerConfig, handler HandlerFunc) error
 	// Start starts the MQ consumer to begin consuming messages.
 	Start() error
 	// Close closes the MQ consumer.

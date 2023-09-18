@@ -8,15 +8,15 @@ import (
 )
 
 type KafkaMessage struct {
-	*kafka.Message
+	message *kafka.Message
 }
 
 func (m KafkaMessage) Body() []byte {
-	return m.Message.Value
+	return m.message.Value
 }
 
 func (m KafkaMessage) Time() time.Time {
-	return m.Message.Timestamp
+	return m.message.Timestamp
 }
 
 func (m KafkaMessage) Requeue() error {

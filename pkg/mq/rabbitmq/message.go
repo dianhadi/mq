@@ -7,21 +7,21 @@ import (
 )
 
 type RabbitMqMessage struct {
-	*amqp.Delivery
+	message *amqp.Delivery
 }
 
 func (m RabbitMqMessage) Body() []byte {
-	return m.Delivery.Body
+	return m.message.Body
 }
 
 func (m RabbitMqMessage) Time() time.Time {
-	return m.Delivery.Timestamp
+	return m.message.Timestamp
 }
 
 func (m RabbitMqMessage) Requeue() error {
-	return m.Delivery.Nack(false, true)
+	return m.message.Nack(false, true)
 }
 
 func (m RabbitMqMessage) Done() error {
-	return m.Delivery.Ack(false)
+	return m.message.Ack(false)
 }

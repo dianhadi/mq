@@ -13,42 +13,56 @@ import (
 	handler "github.com/dianhadi/mq/internal/handler/http"
 	"github.com/dianhadi/mq/pkg/mq"
 	mqKafka "github.com/dianhadi/mq/pkg/mq/kafka"
+	mqNsq "github.com/dianhadi/mq/pkg/mq/nsq"
 	mqRabbit "github.com/dianhadi/mq/pkg/mq/rabbitmq"
 	"github.com/go-chi/chi"
 )
 
 func main() {
 	broker := "localhost:9092"
-
 	host := "localhost"
 	port := 5672
 	username := "admin"
 	password := "admin"
 	serverPort := "8008"
+	portD := 4150
 
 	// Init Configuration
-	configKafka := mq.Config{
+	configKafka := mq.ConfigKafka{
 		Hosts: []string{broker},
 	}
-	configRabbit := mq.Config{
+	configRabbit := mq.ConfigRabbitMq{
 		Host:     host,
 		Port:     port,
 		Username: username,
 		Password: password,
 	}
+	configNsq := mq.ConfigNsq{
+		ProducerHost: host,
+		ProducerPort: portD,
+	}
+	config := mq.Config{
+		Kafka:    configKafka,
+		RabbitMq: configRabbit,
+		Nsq:      configNsq,
+	}
 
 	// Init Producer
-	producerKafka, err := mqKafka.NewProducer(configKafka)
+	producerKafka, err := mqKafka.NewProducer(config)
 	if err != nil {
 		panic(err)
 	}
 	defer producerKafka.Close()
-
-	producerRabbitMq, err := mqRabbit.NewProducer(configRabbit)
+	producerRabbitMq, err := mqRabbit.NewProducer(config)
 	if err != nil {
 		panic(err)
 	}
 	defer producerRabbitMq.Close()
+	producerNsq, err := mqNsq.NewProducer(config)
+	if err != nil {
+		panic(err)
+	}
+	defer producerNsq.Close()
 
 	log.Println("Init Handler")
 	handlerKafka, err := handler.New(producerKafka)
@@ -59,12 +73,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	handlerNsq, err := handler.New(producerNsq)
+	if err != nil {
+		panic(err)
+	}
 
 	r := chi.NewRouter()
 
 	log.Println("Register Route")
 	r.Post("/kafka", handlerKafka.Publish)
 	r.Post("/rabbit", handlerRabbitMq.Publish)
+	r.Post("/nsq", handlerNsq.Publish)
 
 	log.Printf("Starting server on port %s...", serverPort)
 	startServer(":"+serverPort, r)

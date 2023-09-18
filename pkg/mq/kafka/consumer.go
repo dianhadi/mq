@@ -12,15 +12,15 @@ import (
 )
 
 type KafkaConsumer struct {
-	*kafka.Consumer
+	consumer *kafka.Consumer
 	topics   []string
 	handlers map[string]mq.HandlerFunc
 }
 
 func NewConsumer(config mq.Config) (*KafkaConsumer, error) {
 	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": strings.Join(config.Hosts, ","),
-		"group.id":          config.Group,
+		"bootstrap.servers": strings.Join(config.Kafka.Hosts, ","),
+		"group.id":          config.Kafka.Group,
 		"auto.offset.reset": "earliest",
 	})
 
@@ -29,21 +29,21 @@ func NewConsumer(config mq.Config) (*KafkaConsumer, error) {
 	}
 
 	kafkaConsumer := KafkaConsumer{
-		Consumer: consumer,
+		consumer: consumer,
 		topics:   []string{},
 		handlers: make(map[string]mq.HandlerFunc),
 	}
 	return &kafkaConsumer, nil
 }
 
-func (c *KafkaConsumer) AddConsumer(topic string, cfg mq.ConsumerConfig, handler mq.HandlerFunc) error {
+func (c *KafkaConsumer) AddHandler(topic string, cfg mq.ConsumerConfig, handler mq.HandlerFunc) error {
 	c.topics = append(c.topics, topic)
 	c.handlers[topic] = handler
 
 	return nil
 }
 
-func (c *KafkaConsumer) AddConsumerWithChannel(topic, channel string, cfg mq.ConsumerConfig, handler mq.HandlerFunc) error {
+func (c *KafkaConsumer) AddHandlerWithChannel(topic, channel string, cfg mq.ConsumerConfig, handler mq.HandlerFunc) error {
 	return errors.New("not implemented in kafka")
 }
 
@@ -52,17 +52,17 @@ func (c *KafkaConsumer) Start() error {
 		return errors.New("No topic is added")
 	}
 
-	c.SubscribeTopics(c.topics, nil)
+	c.consumer.SubscribeTopics(c.topics, nil)
 
 	// A signal handler or similar could be used to set this to false to break the loop.
 	run := true
 
 	for run {
-		msg, err := c.ReadMessage(time.Second)
+		msg, err := c.consumer.ReadMessage(time.Second)
 		if err == nil {
 			handler := c.handlers[*msg.TopicPartition.Topic]
 			ctx := context.Background()
-			message := KafkaMessage{Message: msg}
+			message := KafkaMessage{message: msg}
 			handler(ctx, message)
 		} else if err.Error() != kafka.ErrTimedOut.String() {
 			fmt.Printf("Consumer error: %v (%v)\n", err, msg)
@@ -72,5 +72,5 @@ func (c *KafkaConsumer) Start() error {
 }
 
 func (k *KafkaConsumer) Close() {
-	k.Close()
+	k.consumer.Close()
 }

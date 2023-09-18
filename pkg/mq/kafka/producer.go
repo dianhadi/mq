@@ -8,18 +8,20 @@ import (
 )
 
 type KafkaProducer struct {
-	*kafka.Producer
+	producer *kafka.Producer
 }
 
 func NewProducer(config mq.Config) (*KafkaProducer, error) {
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": strings.Join(config.Hosts, ","),
+		"bootstrap.servers": strings.Join(config.Kafka.Hosts, ","),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	kafkaProducer := KafkaProducer{Producer: producer}
+	kafkaProducer := KafkaProducer{
+		producer: producer,
+	}
 	return &kafkaProducer, nil
 }
 
@@ -28,7 +30,7 @@ func (p KafkaProducer) SendDirectMessage(topic, msg string) error {
 }
 
 func (p KafkaProducer) SendMessage(topic, msg string) error {
-	err := p.Produce(&kafka.Message{
+	err := p.producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          []byte(msg),
 	}, nil)
@@ -37,5 +39,5 @@ func (p KafkaProducer) SendMessage(topic, msg string) error {
 }
 
 func (p KafkaProducer) Close() {
-	p.Close()
+	p.producer.Close()
 }

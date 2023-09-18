@@ -9,12 +9,12 @@ import (
 )
 
 type RabbitMqProducer struct {
-	conn    *amqp.Connection
-	channel *amqp.Channel
+	connection *amqp.Connection
+	channel    *amqp.Channel
 }
 
 func NewProducer(config mq.Config) (*RabbitMqProducer, error) {
-	url := fmt.Sprintf("amqp://%s:%s@%s:%d/", config.Username, config.Password, config.Host, config.Port)
+	url := fmt.Sprintf("amqp://%s:%s@%s:%d/", config.RabbitMq.Username, config.RabbitMq.Password, config.RabbitMq.Host, config.RabbitMq.Port)
 
 	// Establish a connection to RabbitMQ server
 	conn, err := amqp.Dial(url)
@@ -28,8 +28,8 @@ func NewProducer(config mq.Config) (*RabbitMqProducer, error) {
 	}
 
 	rabbitMqProducer := RabbitMqProducer{
-		conn:    conn,
-		channel: channel,
+		connection: conn,
+		channel:    channel,
 	}
 	return &rabbitMqProducer, nil
 }
@@ -106,6 +106,6 @@ func (p RabbitMqProducer) SendMessage(exchange, msg string) error {
 }
 
 func (p RabbitMqProducer) Close() {
-	p.conn.Close()
+	p.connection.Close()
 	p.channel.Close()
 }
