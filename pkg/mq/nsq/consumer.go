@@ -18,7 +18,7 @@ type NsqConsumer struct {
 
 // NewConsumer creates a new NSQ consumer.
 func NewConsumer(config mq.Config) (*NsqConsumer, error) {
-	url := fmt.Sprintf("%s:%d", config, config.Nsq.ConsumerHost)
+	url := fmt.Sprintf("%s:%d", config.Nsq.ConsumerHost, config.Nsq.ConsumerPort)
 	return &NsqConsumer{
 		lookupD: url,
 		cons:    []*nsq.Consumer{},
